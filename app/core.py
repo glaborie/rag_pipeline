@@ -27,7 +27,13 @@ def _load_documents(file_paths: Iterable[str]):
     documents = []
     for file_path in file_paths:
         loader = PyPDFLoader(file_path)
-        documents.extend(loader.load())
+        loaded = loader.load()
+        print(f"[DEBUG] Loaded {len(loaded)} docs from {file_path}")
+        for doc in loaded:
+            if 'source' not in doc.metadata or not doc.metadata['source']:
+                doc.metadata['source'] = file_path
+            print(f"[DEBUG] Doc metadata: {doc.metadata}")
+        documents.extend(loaded)
     return documents
 
 
@@ -50,24 +56,27 @@ def _collect_ids_and_sources(splits) -> Tuple[List[str], List[str]]:
     return ids, sources
 
 
-def _delete_existing_sources(sources: Iterable[str]) -> None:
-    unique_sources = sorted(set(sources))
-    if not unique_sources:
-        return
-    db = get_vector_store()
-    for source in unique_sources:
-        db.delete(where={"source": source})
-
-
 async def process_documents(file_paths: List[str]) -> int:
+    print(f"[DEBUG] Ingesting files: {file_paths}")
     documents = _load_documents(file_paths)
+    print(f"[DEBUG] Loaded {len(documents)} documents.")
+    if documents:
+        print(f"[DEBUG] Example document metadata: {documents[0].metadata}")
     splits = _split_documents(documents)
+    print(f"[DEBUG] Split into {len(splits)} chunks.")
+    if splits:
+        print(f"[DEBUG] Example split metadata: {splits[0].metadata}")
 
     ids, sources = _collect_ids_and_sources(splits)
-    _delete_existing_sources(sources)
+    print(f"[DEBUG] Collected sources: {sources}")
+    # _delete_existing_sources(sources)  # TEMP: Skip deletion to debug Chroma add
 
     db = get_vector_store()
-    db.add_documents(splits, ids=ids)
+    try:
+        db.add_documents(splits, ids=ids)
+    except Exception as e:
+        print(f"[ERROR] Exception during db.add_documents: {e}")
+        raise
     return len(splits)
 
 

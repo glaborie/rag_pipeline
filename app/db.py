@@ -34,10 +34,12 @@ def get_vector_store() -> Chroma:
     if _VECTOR_STORE is None:
         persist_dir = get_persist_directory()
         os.makedirs(persist_dir, exist_ok=True)
+        print(
+            f"[DEBUG] Creating OpenAIEmbeddings with model={os.environ.get('OPENROUTER_EMBED_MODEL', 'text-embedding-3-small')}, base_url={_openrouter_base_url()}, api_key={_openrouter_api_key()}, default_headers={_openrouter_headers()}")
         _VECTOR_STORE = Chroma(
             persist_directory=persist_dir,
             embedding_function=OpenAIEmbeddings(
-                model=os.environ.get("OPENROUTER_EMBED_MODEL", "text-embedding-3-small"),
+                model=os.environ.get("OPENROUTER_EMBED_MODEL", "openai/text-embedding-3-small"),
                 base_url=_openrouter_base_url(),
                 api_key=_openrouter_api_key(),
                 default_headers=_openrouter_headers(),
