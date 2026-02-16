@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: DocuQuery RAG API
+  version: "1.0"
+servers:
+  - url: http://localhost:8000
+paths:
+  /api/v1/ingest:
+    post:
+      summary: Ingest and index uploaded files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Successfully indexed files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  files:
+                    type: array
+                    items:
+                      type: string
+                  chunks:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - message
+                  - files
+                  - chunks
+  /api/v1/chat:
+    post:
+      summary: Query the RAG system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+              required:
+                - query
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                  error:
+                    type: string
+  /api/v1/documents:
+    get:
+      summary: List indexed documents
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      type: string
+  /api/v1/index:
+    delete:
+      summary: Clear the index
+      responses:
+        '200':
+          description: Index cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string

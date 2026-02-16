@@ -21,23 +21,36 @@ class QueryPayload(BaseModel):
 @app.post("/api/v1/ingest")
 async def ingest(files: List[UploadFile] = File(...)):
     saved_paths: List[str] = []
+    errors: List[str] = []
     for file in files:
         file_path = UPLOAD_DIR / file.filename
         with file_path.open("wb") as f:
             shutil.copyfileobj(file.file, f)
         saved_paths.append(str(file_path))
 
-    count = await process_documents(saved_paths)
-    return {
+    try:
+        count = await process_documents(saved_paths)
+    except Exception as e:
+        errors.append(str(e))
+        count = 0
+
+    response = {
         "message": f"Successfully indexed {len(files)} files.",
         "files": [Path(p).name for p in saved_paths],
         "chunks": count,
     }
+    if errors:
+        response["errors"] = errors
+    return response
 
 
 @app.post("/api/v1/chat")
 def chat(payload: QueryPayload):
-    return query_rag(payload.query)
+    try:
+        result = query_rag(payload.query)
+    except Exception as e:
+        result = {"answer": "", "sources": [], "error": str(e)}
+    return result
 
 
 @app.get("/api/v1/documents")
